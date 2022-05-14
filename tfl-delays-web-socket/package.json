@@ -1,0 +1,18 @@
+{
+  "name": "bus_delays_web_socket",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@microsoft/signalr": "^6.0.5",
+    "express": "^4.18.1",
+    "jquery": "^3.6.0",
+    "mongodb": "^4.6.0",
+    "signalr": "^2.4.3"
+  }
+}

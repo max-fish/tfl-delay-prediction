@@ -1,18 +1,29 @@
 from re import M
-from django.http import HttpResponse
-from django.shortcuts import render
-from django.views.decorators.csrf import csrf_exempt 
 
 # import boto3
 import json
+import time
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 import pandas as pd
 import os
+
+from requests import request
+
+from api.blob_storage import uploadCsvFileToAzure
 # dynamo_db = boto3.resource('dynamodb')
 
-COUNTER = 0
+counter = 0
+
+locked = False
+
+requestCounter = 0
 
 @csrf_exempt
 def index(request):
+
+    global requestCounter
+
     # table = dynamo_db.Table('test_arrival_predictions')
     
     # print(request.body)
@@ -25,9 +36,34 @@ def index(request):
 
     # print(arrivalPredictionsDataFrame)
 
-    outputPath = 'data_' + str(COUNTER) + '.csv'
+    global locked
+
+    global counter
+
+    while locked:
+        time.sleep(1)
+
+    locked = True
+
+    print('Request Serviced: ' + str(requestCounter))
+
+    requestCounter += 1
+
+    outputPath = 'data_' + str(counter) + '.csv'
+
+    if os.path.exists(outputPath):
+
+        if os.path.getsize(outputPath) / 1000000 > 10:
+            uploadCsvFileToAzure(outputPath)
+            counter += 1
+            outputPath = 'data_' + str(counter) + '.csv'
+        
 
     arrivalPredictionsDataFrame.to_csv(outputPath, mode='a', index=False, header=not os.path.exists(outputPath))
+
+    locked = False
+
+    
 
     # fileObject = open('data_' + str(COUNTER) + '.csv', 'w')
 

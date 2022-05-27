@@ -74,9 +74,7 @@ function sendToDjango() {
       },
       body: JSON.stringify(predictions)
     }).then(() => {
-      console.log(predictions.length);
       predictions = [];
-      console.log('Sent successfully');
     })
     .catch((error) => {
         console.error('error: ' + error);

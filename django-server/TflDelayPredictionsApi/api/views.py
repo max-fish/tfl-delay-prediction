@@ -26,6 +26,8 @@ def index(request):
 
     arrivalPredictionsDataFrame = pd.read_json(str(arrivalPredictions, 'UTF-8'))
 
+    arrivalPredictionsDataFrame.drop(columns=['Timing'], inplace=True)
+
     global locked
 
     global counter
@@ -39,7 +41,7 @@ def index(request):
 
     if os.path.exists(outputPath):
 
-        if os.path.getsize(outputPath) / 1000000 > 10:
+        if os.path.getsize(outputPath) / 1000000 > 193:
             uploadCsvFileToAzure(outputPath)
             counter += 1
             outputPath = 'data_' + str(counter) + '.csv'

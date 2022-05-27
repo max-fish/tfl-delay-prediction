@@ -4,10 +4,12 @@ $.connection.hub.logging = true;
 $.connection.hub.url = "https://push-api.tfl.gov.uk/signalr/hubs/signalr";
 
 var hub = $.connection.predictionsRoomHub;
-hub.client.showPredictions = printBoard;
+
 
 jQuery(document).on('click', '#connectButton', () => {
   console.log('start');
+
+  hub.client.showPredictions = printBoard;
 
   $.connection.hub.start().done(function() {
   console.log("tfl.predictions: connection started");
@@ -27,29 +29,42 @@ hub.server.addLineRooms(lineRooms)
 
 jQuery(document).on('click', '#disconnectButton', () => {
   console.log('stop');
+  hub.client.showPredictions = null;
   $.connection.hub.stop(true, true);
+  clearInterval(checkTimeout);
   // mongodb.closeDatabaseConnection();
 });
 
-function updateBoard(data) {
-            $("#board").empty();
-            data.sort(sortByTts);
+// function updateBoard(data) {
+//             $("#board").empty();
+//             data.sort(sortByTts);
   
-            $.each(data, function( index, prediction ) {
-              var mins = Math.floor(prediction.TimeToStation/60);
-              var due = mins === 0 ? "Due" : mins + "m"; 
-                $("#board").append("<tr><td>" + prediction.Towards + "</td><td>" + due + "</td><td>" + prediction.CurrentLocation + "</td></tr>");
-            });
+//             $.each(data, function( index, prediction ) {
+//               var mins = Math.floor(prediction.TimeToStation/60);
+//               var due = mins === 0 ? "Due" : mins + "m"; 
+//                 $("#board").append("<tr><td>" + prediction.Towards + "</td><td>" + due + "</td><td>" + prediction.CurrentLocation + "</td></tr>");
+//             });
     
-            console.log(data);
-            return true;
-};
+//             console.log(data);
+//             return true;
+// };
+
+var predictions = []
+
+var locked = false;
+
+var checkTimeout = setInterval(function() {
+  if(predictions.length !== 0) {
+    sendToDjango();
+  }
+}, 1000)
 
 function printBoard(data) {
-
+  predictions.push(...data);
   // console.log(data);
+}
 
-  
+function sendToDjango() {
 
     fetch('http://127.0.0.1:8000/api/', {
       method: 'POST',
@@ -57,15 +72,27 @@ function printBoard(data) {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(data)
-    }).then((data) => {
-      console.log('successful upload: ' + data);
+      body: JSON.stringify(predictions)
+    }).then(() => {
+      console.log(predictions.length);
+      predictions = [];
+      console.log('Sent successfully');
     })
-      .catch((error) => {
+    .catch((error) => {
         console.error('error: ' + error);
       });
+}
 
-    //  mongodb.insertArrivals('453Arrivals', data);
+
+
+function until(conditionFunction) {
+
+  const poll = resolve => {
+    if(conditionFunction()) resolve();
+    else setTimeout(_ => poll(resolve), 400);
+  }
+
+  return new Promise(poll);
 }
 
 function sortByTts(a, b) {

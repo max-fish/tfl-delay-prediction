@@ -3,7 +3,7 @@ from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient, _
 
 def uploadCsvFileToAzure(file_name):
     try:
-        print("Azure Blob Storage v" + __version__ + " - Python quickstart sample")
+        print("Azure upload")
 
         blob_service_client = BlobServiceClient.from_connection_string("DefaultEndpointsProtocol=https;AccountName=delaycsvstorage;AccountKey=prPXa/eMkACLn8RTMi9KgLQZSSVfXaQyP8bBTKZdrfIFKlSl2LmdmEXUjJDS71y7rI2aegJyq+It+AStwHg7pw==;EndpointSuffix=core.windows.net")
     

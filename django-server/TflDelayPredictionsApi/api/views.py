@@ -15,12 +15,8 @@ counter = 0
 
 locked = False
 
-requestCounter = 0
-
 @csrf_exempt
 def index(request):
-
-    global requestCounter
 
     # table = dynamo_db.Table('test_arrival_predictions')
     
@@ -30,10 +26,6 @@ def index(request):
 
     arrivalPredictionsDataFrame = pd.read_json(str(arrivalPredictions, 'UTF-8'))
 
-    arrivalPredictionsDataFrame.drop(columns=['Timing'], inplace=True)
-
-    # print(arrivalPredictionsDataFrame)
-
     global locked
 
     global counter
@@ -42,10 +34,6 @@ def index(request):
         time.sleep(1)
 
     locked = True
-
-    print('Request Serviced: ' + str(requestCounter))
-
-    requestCounter += 1
 
     outputPath = 'data_' + str(counter) + '.csv'
 

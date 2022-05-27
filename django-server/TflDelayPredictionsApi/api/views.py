@@ -8,8 +8,6 @@ from django.views.decorators.csrf import csrf_exempt
 import pandas as pd
 import os
 
-from requests import request
-
 from api.blob_storage import uploadCsvFileToAzure
 # dynamo_db = boto3.resource('dynamodb')
 

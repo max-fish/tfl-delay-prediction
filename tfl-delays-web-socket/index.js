@@ -35,69 +35,44 @@
 
 import axios from 'axios';
 
-import { removeOutdatedPredictions, generateTableName } from './pre-processing.js';
-
-import { hasTableNameInCache, addTableNameToCache } from './table-name-cache.js';
-
-import { addPredictionsToTable, createTableJustInCase } from './azure-tables-service.js';
+import { addPredictionsToTable } from './azure-tables-service.js';
 
 const url = "https://api.tfl.gov.uk/Mode/bus/Arrivals";
 
 const params = {
     app_key: "6c2701fece254c448b25dd58bc3c0a3f"
 };
-    setInterval(() => {
-    console.log('starting new request...');
     axios.get(url, params)
-        .then(async (response) => {
-            const onlyNewPredictions = removeOutdatedPredictions(response.data);
+    .then(async (response) => {
 
-            const tableNameToPredictionsMap = new Map();
+        console.log('new request...');
 
-            onlyNewPredictions.forEach((prediction) => {
-                const tableName = generateTableName(prediction);
+        const predictions = response.data;
 
-                if(!tableNameToPredictionsMap.has(tableName)) {
-                    tableNameToPredictionsMap.set(tableName, new Map());
-                }
-                
-                const busIdToPrecictionsMap = tableNameToPredictionsMap.get(tableName);
+        const partitionKeyToPredictionsMap = new Map();
 
-                const busId = prediction['vehicleId'];
+        predictions.forEach((prediction) => {
+            const operationType = prediction['operationType'];
 
-                if(!busIdToPrecictionsMap.has(busId)) {
-                    busIdToPrecictionsMap.set(busId, []);
-                }
+            if(operationType !== 2) {
 
-                const predictionsForBusId = busIdToPrecictionsMap.get(busId);
+                const partitionKey = prediction['lineName'];
 
-                busIdToPrecictionsMap.set(busId, [...predictionsForBusId, prediction]);
-            });
-
-            const tableNameToPredictionsMapIter = tableNameToPredictionsMap.entries();
-
-            // console.log(tableNameToPredictionsMapIter);
-
-            for(const [tableName, busToPrecictionsMap] of tableNameToPredictionsMapIter) {
-                if(!hasTableNameInCache(tableName)){
-                    try {
-                        await createTableJustInCase(tableName);
-                    } catch(err) {
-                        console.error(err);
-                        continue;
-                    }
+                if(!partitionKeyToPredictionsMap.has(partitionKey)) {
+                    partitionKeyToPredictionsMap.set(partitionKey, []);
                 }
 
-                const busToPrecictionsMapIter = busToPrecictionsMap.entries();
+                const predictionsForPartitionKey = partitionKeyToPredictionsMap.get(partitionKey);
 
-                for(const [busId, predictions] of busToPrecictionsMapIter) {
-                    await addPredictionsToTable(tableName, busId, predictions);
-                }
-
-                addTableNameToCache(tableName);
+                partitionKeyToPredictionsMap.set(partitionKey, [...predictionsForPartitionKey, prediction]);
             }
+        });
 
-            console.log('done');
-        })
-        .catch(err => console.error(err));
-    }, 30000);
+        const partitionKeyToPredictionsMapIter = partitionKeyToPredictionsMap.entries();
+
+        for(const [partitionKey, predictions] of partitionKeyToPredictionsMapIter) {
+            await addPredictionsToTable(partitionKey, predictions);
+        }
+
+        console.log('done');
+    });

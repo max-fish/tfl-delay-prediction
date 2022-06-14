@@ -9,10 +9,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@microsoft/signalr": "^6.0.5",
-    "express": "^4.18.1",
-    "jquery": "^3.6.0",
-    "mongodb": "^4.6.0",
-    "signalr": "^2.4.3"
-  }
+    "@azure/data-tables": "^13.1.2",
+    "axios": "^0.27.2",
+    "collections": "^5.1.13"
+  },
+  "type": "module"
 }

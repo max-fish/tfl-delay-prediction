@@ -16,7 +16,7 @@ const credential = new AzureNamedKeyCredential(account, accountKey);
 //     "http://127.0.0.1:10002/devstoreaccount1", devCredential, {allowInsecureConnection: true}
 // );
 
-const tableClient = new TableClient(`https://${account}.table.core.windows.net`, "arrivals3", credential);
+const tableClient = new TableClient(`https://${account}.table.core.windows.net`, "arrivals", credential);
 
 // const devTableClient = new TableClient("http://127.0.0.1:10002/devstoreaccount1", "arrivals", devCredential, {allowInsecureConnection: true});
 
@@ -36,11 +36,27 @@ const addPredictionsToTable = async (partitionKey, predictions) => {
         naptanId: prediction['naptanId']
         }]
     });
-    try {
-        await tableClient.submitTransaction(entityActions);
-    } catch(err) {
-        if(err.statusCode !== 409) {
-            console.error(err);
+
+    if(entityActions.length > 100) {
+        //credit to https://stackoverflow.com/questions/8495687/split-array-into-chunks
+        const chunkSize = 100;
+        for (let i = 0; i < entityActions.length; i += chunkSize) {
+            const chunk = entityActions.slice(i, i + chunkSize);
+            try {
+                await tableClient.submitTransaction(chunk);
+            } catch(err) {
+                if(err.statusCode !== 409) {
+                    console.error(err);
+                }
+            }
+        }
+    } else{
+        try {
+            await tableClient.submitTransaction(entityActions);
+        } catch(err) {
+            if(err.statusCode !== 409) {
+                console.error(err);
+            }
         }
     }
 };

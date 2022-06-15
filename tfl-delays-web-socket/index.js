@@ -42,8 +42,10 @@ const url = "https://api.tfl.gov.uk/Mode/bus/Arrivals";
 const params = {
     app_key: "6c2701fece254c448b25dd58bc3c0a3f"
 };
+
+setInterval(() => {
     axios.get(url, params)
-    .then(async (response) => {
+        .then(async (response) => {
 
         console.log('new request...');
 
@@ -54,25 +56,25 @@ const params = {
         predictions.forEach((prediction) => {
             const operationType = prediction['operationType'];
 
-            if(operationType !== 2) {
+            if (operationType !== 2) {
 
                 const partitionKey = prediction['lineName'];
 
-                if(!partitionKeyToPredictionsMap.has(partitionKey)) {
+                if (!partitionKeyToPredictionsMap.has(partitionKey)) {
                     partitionKeyToPredictionsMap.set(partitionKey, []);
                 }
 
                 const predictionsForPartitionKey = partitionKeyToPredictionsMap.get(partitionKey);
 
                 partitionKeyToPredictionsMap.set(partitionKey, [...predictionsForPartitionKey, prediction]);
+                }
+            });
+
+            const partitionKeyToPredictionsMapIter = partitionKeyToPredictionsMap.entries();
+
+            for (const [partitionKey, predictions] of partitionKeyToPredictionsMapIter) {
+                await addPredictionsToTable(partitionKey, predictions);
             }
+            console.log('done');
         });
-
-        const partitionKeyToPredictionsMapIter = partitionKeyToPredictionsMap.entries();
-
-        for(const [partitionKey, predictions] of partitionKeyToPredictionsMapIter) {
-            await addPredictionsToTable(partitionKey, predictions);
-        }
-
-        console.log('done');
-    });
+}, 30000);

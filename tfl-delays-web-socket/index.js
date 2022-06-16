@@ -66,11 +66,14 @@ setInterval(() => {
 
                 const predictionsForPartitionKey = partitionKeyToPredictionsMap.get(partitionKey);
 
-                partitionKeyToPredictionsMap.set(partitionKey, [...predictionsForPartitionKey, prediction]);
+                predictionsForPartitionKey.push(prediction);
+                
                 }
             });
 
             const partitionKeyToPredictionsMapIter = partitionKeyToPredictionsMap.entries();
+
+            // console.log(partitionKeyToPredictionsMapIter);
 
             for (const [partitionKey, predictions] of partitionKeyToPredictionsMapIter) {
                 await addPredictionsToTable(partitionKey, predictions);

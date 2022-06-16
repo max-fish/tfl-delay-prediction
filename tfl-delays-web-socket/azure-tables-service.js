@@ -23,9 +23,9 @@ const tableClient = new TableClient(`https://${account}.table.core.windows.net`,
 const addPredictionsToTable = async (partitionKey, predictions) => {
 
     const entityActions = predictions.map((prediction) => {
-        return ["create", {
+        return ["upsert", {
         partitionKey: partitionKey,
-        rowKey: prediction['id'].concat('_', prediction['timestamp']),
+        rowKey: prediction['id'].concat('_', prediction['timestamp'], '_', prediction['vehicleId']),
         stationName: prediction['stationName'],
         timeOfPrediction: prediction['timestamp'],
         expectedArrival: prediction['expectedArrival'],
@@ -33,7 +33,8 @@ const addPredictionsToTable = async (partitionKey, predictions) => {
         direction: prediction['direction'],
         timestamp: prediction['timestamp'],
         vehicleId: prediction['vehicleId'],
-        naptanId: prediction['naptanId']
+        naptanId: prediction['naptanId'],
+        destinationName: prediction['destinationName']
         }]
     });
 
@@ -45,18 +46,14 @@ const addPredictionsToTable = async (partitionKey, predictions) => {
             try {
                 await tableClient.submitTransaction(chunk);
             } catch(err) {
-                if(err.statusCode !== 409) {
-                    console.error(err);
-                }
+                console.error(err);
             }
         }
     } else{
         try {
             await tableClient.submitTransaction(entityActions);
         } catch(err) {
-            if(err.statusCode !== 409) {
-                console.error(err);
-            }
+            console.error(err);
         }
     }
 };

@@ -79,5 +79,6 @@ setInterval(() => {
                 await addPredictionsToTable(partitionKey, predictions);
             }
             console.log('done');
-        });
+        })
+        .catch((err) => console.error(err));
 }, 30000);

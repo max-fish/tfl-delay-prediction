@@ -40,7 +40,8 @@ import { addPredictionsToTable } from './azure-tables-service.js';
 const url = "https://api.tfl.gov.uk/Mode/bus/Arrivals";
 
 const params = {
-    app_key: "6c2701fece254c448b25dd58bc3c0a3f"
+    app_key: "6c2701fece254c448b25dd58bc3c0a3f",
+    count: -1
 };
 
 setInterval(() => {

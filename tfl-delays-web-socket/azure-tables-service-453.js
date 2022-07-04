@@ -25,7 +25,7 @@ const addPredictionsToTable = async (partitionKey, predictions) => {
     const entityActions = predictions.map((prediction) => {
         return ["upsert", {
         partitionKey: partitionKey,
-        rowKey: prediction['id'].concat('_', prediction['timestamp']),
+        rowKey: prediction['id'].concat('_', prediction['timestamp'], '_', prediction['vehicleId']),
         stationName: prediction['stationName'],
         timeOfPrediction: prediction['timestamp'],
         expectedArrival: prediction['expectedArrival'],

@@ -23,7 +23,7 @@ setInterval(() => {
 
             if (operationType !== 2) {
 
-                const partitionKey = prediction['vehicleId'];
+                const partitionKey = prediction['lineName'];
 
                 if (!partitionKeyToPredictionsMap.has(partitionKey)) {
                     partitionKeyToPredictionsMap.set(partitionKey, []);

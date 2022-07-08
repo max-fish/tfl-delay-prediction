@@ -1,85 +1,86 @@
-// const express = require('express');
-// const app = express();
-// const path = require('path');
-
-// const hostname = '127.0.0.1';
-
-// const port = 8080;
-
-// app.listen(port, () => {
-//     console.log("App listening");
-// });
-
-// app.use("/static", express.static("./static/"));
-
-// app.get("/", (req, res) => {
-
-//     const options = {
-//         root: path.join(__dirname)
-//     };
-
-//     res.sendFile('index.html', options);
-// });
-
-
-
-// server.on('close', () => {
-//     console.log('closing server');
-//     $.connection.hub.stop(false, true);
-// });
-
-// process.on('SIGINT', () => {
-//     console.log('ctrl+c pressed');
-//     server.close();
-// });
-
 import axios from 'axios';
 
 import { addPredictionsToTable } from './azure-tables-service.js';
 
-const url = "https://api.tfl.gov.uk/Mode/bus/Arrivals";
+import { readFileSync } from 'fs'
 
-const params = {
-    app_key: "6c2701fece254c448b25dd58bc3c0a3f",
-    count: -1
-};
+const buffer = readFileSync('bus-lines.txt');
+
+const buses = buffer.toString().split(',');
 
 setInterval(() => {
-    axios.get(url, params)
-        .then(async (response) => {
+    console.log('new request...');
+    
+    const tflPromises = [];
+    
+    const chunkSize = 20;
+    
+    for (let i = 0; i < buses.length; i += chunkSize) {
+        const chunk = buses.slice(i, i + chunkSize);
+        const url = "https://api.tfl.gov.uk/Line/" + chunk.join() + "/Arrivals?app_key=6c2701fece254c448b25dd58bc3c0a3f&operationType=1"
+        const tflPromise = axios.get(url);
+        tflPromises.push(tflPromise);
+    }
+    
+    Promise.allSettled(tflPromises).then(async (responses) => {
 
-        console.log('new request...');
+        const azurePromises = [];
 
-        const predictions = response.data;
+        const onlyFulfilledResponses = responses.filter((response) => response.status === "fulfilled");
 
-        const partitionKeyToPredictionsMap = new Map();
+        for (const response of onlyFulfilledResponses) {
+            const predictions = response.value.data;
 
-        predictions.forEach((prediction) => {
-            const operationType = prediction['operationType'];
+            const groupByPartitionKey = predictions.reduce((group, prediction) => {
+                const lineName = prediction['lineName'];
+    
+                group[lineName] = group[lineName] ?? [];
+    
+                group[lineName].push(prediction);
+    
+                return group;
+            }, {});
+    
+            const partitionKeys = Object.keys(groupByPartitionKey);
 
-            if (operationType !== 2) {
-
-                const partitionKey = prediction['lineName'];
-
-                if (!partitionKeyToPredictionsMap.has(partitionKey)) {
-                    partitionKeyToPredictionsMap.set(partitionKey, []);
+            for (const partitionKey of partitionKeys) {
+                if (groupByPartitionKey[partitionKey].length !== 0) {
+                    azurePromises.push(addPredictionsToTable(partitionKey, groupByPartitionKey[partitionKey]));
                 }
-
-                const predictionsForPartitionKey = partitionKeyToPredictionsMap.get(partitionKey);
-
-                predictionsForPartitionKey.push(prediction);
-                
-                }
-            });
-
-            const partitionKeyToPredictionsMapIter = partitionKeyToPredictionsMap.entries();
-
-            // console.log(partitionKeyToPredictionsMapIter);
-
-            for (const [partitionKey, predictions] of partitionKeyToPredictionsMapIter) {
-                await addPredictionsToTable(partitionKey, predictions);
             }
-            console.log('done');
-        })
-        .catch((err) => console.error(err));
-}, 30000);
+        }
+
+        await Promise.allSettled(azurePromises);
+
+        console.log('done');
+
+    }).catch((err) => console.error(err));
+}, 30000)
+
+
+        // predictions.forEach((prediction) => {
+        //     const operationType = prediction['operationType'];
+
+        //     if (operationType !== 2) {
+
+        //         const partitionKey = prediction['lineName'];
+
+        //         if (!partitionKeyToPredictionsMap.has(partitionKey)) {
+        //             partitionKeyToPredictionsMap.set(partitionKey, []);
+        //         }
+
+        //         const predictionsForPartitionKey = partitionKeyToPredictionsMap.get(partitionKey);
+
+        //         predictionsForPartitionKey.push(prediction);
+                
+        //         }
+        //     });
+
+        //     const partitionKeyToPredictionsMapIter = partitionKeyToPredictionsMap.entries();
+
+        //     // console.log(partitionKeyToPredictionsMapIter);
+
+        //     for (const [partitionKey, predictions] of partitionKeyToPredictionsMapIter) {
+        //         await addPredictionsToTable(partitionKey, predictions);
+        //     }
+            

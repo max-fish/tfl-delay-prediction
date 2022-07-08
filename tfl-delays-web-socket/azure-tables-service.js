@@ -16,7 +16,7 @@ const credential = new AzureNamedKeyCredential(account, accountKey);
 //     "http://127.0.0.1:10002/devstoreaccount1", devCredential, {allowInsecureConnection: true}
 // );
 
-const tableClient = new TableClient(`https://${account}.table.core.windows.net`, "arrivals", credential);
+const tableClient = new TableClient(`https://${account}.table.core.windows.net`, "testarrivals3", credential);
 
 // const devTableClient = new TableClient("http://127.0.0.1:10002/devstoreaccount1", "arrivals", devCredential, {allowInsecureConnection: true});
 
@@ -25,7 +25,7 @@ const addPredictionsToTable = async (partitionKey, predictions) => {
     const entityActions = predictions.map((prediction) => {
         return ["upsert", {
         partitionKey: partitionKey,
-        rowKey: prediction['id'].concat('_', prediction['timestamp'], '_', prediction['vehicleId']),
+        rowKey: prediction['id'].concat('_', prediction['timestamp'], '_', prediction['vehicleId'], '_', prediction['direction']),
         stationName: prediction['stationName'],
         timeOfPrediction: prediction['timestamp'],
         expectedArrival: prediction['expectedArrival'],
@@ -46,16 +46,34 @@ const addPredictionsToTable = async (partitionKey, predictions) => {
             try {
                 await tableClient.submitTransaction(chunk);
             } catch(err) {
-                console.error(err);
+                console.log(err);
             }
         }
     } else{
         try {
             await tableClient.submitTransaction(entityActions);
         } catch(err) {
-            console.error(err);
+            console.log(err);
         }
     }
 };
 
-export { addPredictionsToTable };
+const addSinglePrediction = async (prediction) =>  {
+    const newEntity = {
+        partitionKey: prediction['lineName'],
+        rowKey: prediction['id'].concat('_', prediction['timestamp'], '_', prediction['vehicleId'], '_', prediction['direction']),
+        stationName: prediction['stationName'],
+        timeOfPrediction: prediction['timestamp'],
+        expectedArrival: prediction['expectedArrival'],
+        timeToStation: prediction['timeToStation'],
+        direction: prediction['direction'],
+        timestamp: prediction['timestamp'],
+        vehicleId: prediction['vehicleId'],
+        naptanId: prediction['naptanId'],
+        destinationName: prediction['destinationName']
+        };
+
+    await tableClient.createEntity(newEntity);
+}
+
+export { addPredictionsToTable, addSinglePrediction };

@@ -16,7 +16,7 @@ const credential = new AzureNamedKeyCredential(account, accountKey);
 //     "http://127.0.0.1:10002/devstoreaccount1", devCredential, {allowInsecureConnection: true}
 // );
 
-const tableClient = new TableClient(`https://${account}.table.core.windows.net`, "testarrivals3", credential);
+const tableClient = new TableClient(`https://${account}.table.core.windows.net`, "arrivals", credential);
 
 // const devTableClient = new TableClient("http://127.0.0.1:10002/devstoreaccount1", "arrivals", devCredential, {allowInsecureConnection: true});
 

@@ -16,47 +16,54 @@ const credential = new AzureNamedKeyCredential(account, accountKey);
 //     "http://127.0.0.1:10002/devstoreaccount1", devCredential, {allowInsecureConnection: true}
 // );
 
-const tableClient = new TableClient(`https://${account}.table.core.windows.net`, "arrivals", credential);
 
 // const devTableClient = new TableClient("http://127.0.0.1:10002/devstoreaccount1", "arrivals", devCredential, {allowInsecureConnection: true});
 
-const addPredictionsToTable = async (partitionKey, predictions) => {
+let chunkCounter = 0;
 
-    const entityActions = predictions.map((prediction) => {
-        return ["upsert", {
-        partitionKey: partitionKey,
-        rowKey: prediction['id'].concat('_', prediction['timestamp'], '_', prediction['vehicleId'], '_', prediction['direction']),
-        stationName: prediction['stationName'],
-        timeOfPrediction: prediction['timestamp'],
-        expectedArrival: prediction['expectedArrival'],
-        timeToStation: prediction['timeToStation'],
-        direction: prediction['direction'],
-        timestamp: prediction['timestamp'],
-        vehicleId: prediction['vehicleId'],
-        naptanId: prediction['naptanId'],
-        destinationName: prediction['destinationName']
-        }]
-    });
+const addPredictionsToTable = async (partitionKey, predictions, tableNumber) => {
 
-    if(entityActions.length > 100) {
-        //credit to https://stackoverflow.com/questions/8495687/split-array-into-chunks
-        const chunkSize = 100;
-        for (let i = 0; i < entityActions.length; i += chunkSize) {
-            const chunk = entityActions.slice(i, i + chunkSize);
+const tableClient = new TableClient(`https://${account}.table.core.windows.net`, `arrivalstable${tableNumber}`, credential);
+
+
+        const entityActions = predictions.map((prediction) => {
+            return ["upsert", {
+            partitionKey: partitionKey,
+            rowKey: prediction['id'].concat('_', prediction['timestamp'], '_', prediction['vehicleId'], '_', prediction['direction']),
+            stationName: prediction['stationName'],
+            timeOfPrediction: prediction['timestamp'],
+            expectedArrival: prediction['expectedArrival'],
+            timeToStation: prediction['timeToStation'],
+            direction: prediction['direction'],
+            timestamp: prediction['timestamp'],
+            vehicleId: prediction['vehicleId'],
+            naptanId: prediction['naptanId'],
+            destinationName: prediction['destinationName']
+            }]
+        });
+    
+        if(entityActions.length > 100) {
+            //credit to https://stackoverflow.com/questions/8495687/split-array-into-chunks
+            const chunkSize = 100;
+            for (let i = 0; i < entityActions.length; i += chunkSize) {
+                const chunk = entityActions.slice(i, i + chunkSize);
+                try {
+                    await tableClient.submitTransaction(chunk);
+
+                } catch(err) {
+                    console.log(err);
+                }
+            }
+
+        } else{
             try {
-                await tableClient.submitTransaction(chunk);
+                await tableClient.submitTransaction(entityActions);
+
             } catch(err) {
                 console.log(err);
             }
         }
-    } else{
-        try {
-            await tableClient.submitTransaction(entityActions);
-        } catch(err) {
-            console.log(err);
-        }
     }
-};
 
 const addSinglePrediction = async (prediction) =>  {
     const newEntity = {

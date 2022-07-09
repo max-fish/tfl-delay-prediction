@@ -6,12 +6,17 @@ import { readFileSync } from 'fs'
 
 const buffer = readFileSync('bus-lines.txt');
 
+const busLinesToTableNumberJson = JSON.parse(readFileSync('bus-lines-to-table-number.txt').toString());
+
 const buses = buffer.toString().split(',');
 
 setInterval(() => {
+
     console.log('new request...');
     
     const tflPromises = [];
+    
+    const azurePromises = [];
     
     const chunkSize = 20;
     
@@ -23,14 +28,14 @@ setInterval(() => {
     }
     
     Promise.allSettled(tflPromises).then(async (responses) => {
-
-        const azurePromises = [];
-
+    
         const onlyFulfilledResponses = responses.filter((response) => response.status === "fulfilled");
-
+    
         for (const response of onlyFulfilledResponses) {
             const predictions = response.value.data;
-
+    
+            // console.log(predictions.length);
+    
             const groupByPartitionKey = predictions.reduce((group, prediction) => {
                 const lineName = prediction['lineName'];
     
@@ -42,20 +47,22 @@ setInterval(() => {
             }, {});
     
             const partitionKeys = Object.keys(groupByPartitionKey);
-
+    
             for (const partitionKey of partitionKeys) {
                 if (groupByPartitionKey[partitionKey].length !== 0) {
-                    azurePromises.push(addPredictionsToTable(partitionKey, groupByPartitionKey[partitionKey]));
+                    azurePromises.push(addPredictionsToTable(partitionKey, groupByPartitionKey[partitionKey], busLinesToTableNumberJson[partitionKey]));
                 }
             }
         }
-
+    
         await Promise.allSettled(azurePromises);
-
+    
         console.log('done');
-
+    
     }).catch((err) => console.error(err));
-}, 30000)
+    
+}, 30000);
+    
 
 
         // predictions.forEach((prediction) => {

@@ -25,22 +25,34 @@ const addPredictionsToTable = async (partitionKey, predictions, tableNumber) => 
 
 const tableClient = new TableClient(`https://${account}.table.core.windows.net`, `arrivalstable${tableNumber}`, credential);
 
+    const rowKeys = [];
 
-        const entityActions = predictions.map((prediction) => {
-            return ["upsert", {
-            partitionKey: partitionKey,
-            rowKey: prediction['id'].concat('_', prediction['timestamp'], '_', prediction['vehicleId'], '_', prediction['direction']),
-            stationName: prediction['stationName'],
-            timeOfPrediction: prediction['timestamp'],
-            expectedArrival: prediction['expectedArrival'],
-            timeToStation: prediction['timeToStation'],
-            direction: prediction['direction'],
-            timestamp: prediction['timestamp'],
-            vehicleId: prediction['vehicleId'],
-            naptanId: prediction['naptanId'],
-            destinationName: prediction['destinationName']
-            }]
-        });
+    const entityActions = [];
+
+    for (const prediction of predictions) {
+
+        const rowKey = prediction['id'].concat('_', prediction['timestamp'], '_', prediction['vehicleId'], '_', prediction['direction']);
+
+        if(!rowKeys.includes(rowKey)) {
+
+            entityActions.push(["upsert", {
+                partitionKey: partitionKey,
+                rowKey: rowKey,
+                stationName: prediction['stationName'],
+                timeOfPrediction: prediction['timestamp'],
+                expectedArrival: prediction['expectedArrival'],
+                timeToStation: prediction['timeToStation'],
+                direction: prediction['direction'],
+                timestamp: prediction['timestamp'],
+                vehicleId: prediction['vehicleId'],
+                naptanId: prediction['naptanId'],
+                destinationName: prediction['destinationName']
+
+                }]);
+
+            rowKeys.push(rowKey);
+        }
+    }
     
         if(entityActions.length > 100) {
             //credit to https://stackoverflow.com/questions/8495687/split-array-into-chunks

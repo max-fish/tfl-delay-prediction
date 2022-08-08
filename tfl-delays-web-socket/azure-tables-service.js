@@ -21,9 +21,9 @@ const credential = new AzureNamedKeyCredential(account, accountKey);
 
 let chunkCounter = 0;
 
-const addPredictionsToTable = async (partitionKey, predictions, tableNumber) => {
+const addPredictionsToTable = async (partitionKey, predictions) => {
 
-const tableClient = new TableClient(`https://${account}.table.core.windows.net`, `arrivalstable${tableNumber}`, credential);
+const tableClient = new TableClient(`https://${account}.table.core.windows.net`, `top20arrivals`, credential);
 
     const rowKeys = [];
 

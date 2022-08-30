@@ -10,15 +10,17 @@ const busLinesToTableNumberJson = JSON.parse(readFileSync('bus-lines-to-table-nu
 
 const buses = buffer.toString().split(',');
 
-setInterval(() => {
-
     console.log('new request...');
+
+    const startTime = Date.now();
     
     const tflPromises = [];
     
     const azurePromises = [];
     
     const chunkSize = 20;
+
+    let predictionAmount = 0;
     
     for (let i = 0; i < buses.length; i += chunkSize) {
         const chunk = buses.slice(i, i + chunkSize);
@@ -34,7 +36,7 @@ setInterval(() => {
         for (const response of onlyFulfilledResponses) {
             const predictions = response.value.data;
     
-            // console.log(predictions.length);
+            predictionAmount += predictions.length;
     
             const groupByPartitionKey = predictions.reduce((group, prediction) => {
                 const lineName = prediction['lineName'];
@@ -50,18 +52,22 @@ setInterval(() => {
     
             for (const partitionKey of partitionKeys) {
                 if (groupByPartitionKey[partitionKey].length !== 0) {
-                    azurePromises.push(addPredictionsToTable(partitionKey, groupByPartitionKey[partitionKey], busLinesToTableNumberJson[partitionKey]));
+                    // azurePromises.push(addPredictionsToTable(partitionKey, groupByPartitionKey[partitionKey], busLinesToTableNumberJson[partitionKey]));
                 }
             }
         }
+
+        console.log(predictionAmount);
     
         await Promise.allSettled(azurePromises);
+
+        const endTime = Date.now();
+
+        console.log(`${endTime - startTime} ms`);
     
         console.log('done');
     
     }).catch((err) => console.error(err));
-
-}, 30000);
     
 
 

@@ -23,7 +23,7 @@ let chunkCounter = 0;
 
 const addPredictionsToTable = async (partitionKey, predictions) => {
 
-const tableClient = new TableClient(`https://${account}.table.core.windows.net`, `top20arrivals`, credential);
+const tableClient = new TableClient(`https://${account}.table.core.windows.net`, `arrivals`, credential);
 
     const rowKeys = [];
 

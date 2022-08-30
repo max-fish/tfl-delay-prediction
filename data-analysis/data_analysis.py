@@ -353,7 +353,7 @@ def fromTtsSanityCheck():
     x = []
     error_averages = []
     error_variances = []
-    for tts in range(60, 1750):
+    for tts in range(60, 1800):
         data = getErrorFromTTS(tts)
         errors = data['error']
 
@@ -485,3 +485,38 @@ def showAnnotatedErrors():
         break
 
 # showAnnotatedErrors()
+
+def approachSplitSnippet():
+    data = pd.read_csv('arrivals453inbound_12_July_2022.csv')
+
+    df = pd.DataFrame(data)
+
+    pd.set_option('display.max_columns', None)
+
+    toTimestampAndSort(df)
+
+    perBusPerStationSplitting(df)
+
+    df_one_station = df.loc[df['stationName'] == "Trafalgar Avenue"]
+
+    df_grouped = df_one_station.groupby(by=['approach_id'])
+
+    groups_names = list(df_grouped.groups)
+
+    first_group = groups_names[1]
+
+    second_group = groups_names[2]
+
+    first_approach_data = df_grouped.get_group(first_group)
+
+    second_approach_data = df_grouped.get_group(second_group)
+
+    first_preview = first_approach_data.tail(3).apply(lambda x: [x['RowKey'].split('_')[0], x['stationName'], x['timeOfPrediction'], x['timeToStation'], x['expectedArrival']], axis=1, result_type='expand')
+
+    second_preview = second_approach_data.head(3).apply(lambda x: [x['RowKey'].split('_')[0], x['stationName'], x['timeOfPrediction'], x['timeToStation'], x['expectedArrival']], axis=1, result_type='expand')
+
+    print(first_preview)
+
+    print(second_preview)
+
+# approachSplitSnippet()

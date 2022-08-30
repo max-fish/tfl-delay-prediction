@@ -78,7 +78,7 @@ def generateBaselineConfidence(data):
 
     return (accuracy, interval_size, mean_absolute_prediction_error, root_mean_squared_absolute_prediction_error)
 
-print(generateBaselineConfidence())
+# print(generateBaselineConfidence())
 
 def tryDifferentRecencySections():
 

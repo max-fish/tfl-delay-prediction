@@ -2,17 +2,18 @@ import axios from 'axios';
 
 import { addPredictionsToTable } from './azure-tables-service-453.js';
 
-const url = "https://api.tfl.gov.uk/Line/1,100,101,102,103,104,105,106,107,108,109,11,110,111,112,113,114,115,116,453/Arrivals";
+const url = "https://api.tfl.gov.uk/Mode/bus/Arrivals";
 
 const params = {
     app_key: "6c2701fece254c448b25dd58bc3c0a3f"
 };
 
-setInterval(() => {
     axios.get(url, params)
         .then(async (response) => {
 
         console.log('new request...');
+
+        const startTime = Date.now();
 
         const predictions = response.data;
 
@@ -41,7 +42,11 @@ setInterval(() => {
             for (const [partitionKey, predictions] of partitionKeyToPredictionsMapIter) {
                 await addPredictionsToTable(partitionKey, predictions);
             }
+
+            const endTime = Date.now();
+
+            console.log(`${endTime - startTime} ms`);
+
             console.log('done');
         })
         .catch((err) => console.error(err));
-}, 30000);

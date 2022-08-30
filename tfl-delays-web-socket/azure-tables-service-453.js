@@ -46,6 +46,9 @@ const addPredictionsToTable = async (partitionKey, predictions) => {
             try {
                 await tableClient.submitTransaction(chunk);
             } catch(err) {
+                if(err.code == 400) {
+                    console.log(chunk);
+                }
                 console.error(err);
             }
         }
@@ -53,6 +56,9 @@ const addPredictionsToTable = async (partitionKey, predictions) => {
         try {
             await tableClient.submitTransaction(entityActions);
         } catch(err) {
+            if(err.code == 400) {
+                console.log(predictions);
+            }
             console.error(err);
         }
     }
